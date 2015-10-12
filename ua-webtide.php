@@ -33,7 +33,7 @@ function ua_webtide_remove_admin_bar() {
 //! Hide Query Monitor if no admin bar
 add_filter( 'qm/process', function( $process_qm, $is_admin_bar_showing ) {
     return $is_admin_bar_showing;
-});
+}, 10, 2 );
 
 //! Add login styles
 add_action( 'login_head', 'ua_webtide_add_login_styles' );
