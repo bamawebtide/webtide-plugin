@@ -1,0 +1,31 @@
+#login {
+
+    h1 {
+
+        a {
+            display: block;
+            background: url( '../images/wwWebTide-with-ua-wordmark.svg' ) center bottom no-repeat;
+            background-size: 90% auto;
+            width: 100%;
+        }
+
+    }
+
+}
+
+.login {
+
+    #nav {
+
+        a {
+            color: #999;
+
+            &:hover {
+                color: #900;
+            }
+
+        }
+
+    }
+
+}
