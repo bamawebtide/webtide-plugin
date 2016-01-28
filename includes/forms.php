@@ -105,6 +105,21 @@ function ua_webtide_filter_get_form( $form_string, $form ) {
 			}
 		
 			break;
+
+		// Sign up for the WordPress Listserv
+		case 8:
+
+			// They must be authenticated to fill out the form
+			if ( ! ( IS_WEBTIDE_MEMBER || IS_MYBAMA_AUTHENTICATED ) ) {
+
+				// Get the login URL
+				$login_url = $ua_mybama_cas_auth->get_login_url();
+
+				return '<p class="red"><strong>You must be employed by The University of Alabama to sign up for the WordPress listserv. Please authenticate yourself by signing in to myBama.</strong></p>' . '<a href="' . $login_url . '" class="button">Sign in to myBama</a>';
+
+			}
+
+			break;
 			
 	}
 
