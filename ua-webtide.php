@@ -25,8 +25,9 @@ foreach( array( 'admin', 'events', 'forms', 'jobs', 'resources', 'seo', 'shortco
 add_action( 'after_setup_theme', 'ua_webtide_remove_admin_bar' );
 function ua_webtide_remove_admin_bar() {
    
-   if ( ! current_user_can( 'read' ) )
-      show_admin_bar( false );
+   if ( ! current_user_can( 'read' ) ) {
+	   show_admin_bar( false );
+   }
 
 }
 

@@ -82,121 +82,133 @@ function ua_webtide_print_jobs_meta_boxes( $post, $metabox ) {
 // Runs when a job has been added to send the MailChimp job posts mailing list
 add_action( 'wp_insert_post', 'ua_webtide_job_has_been_added', 100, 3 );
 function ua_webtide_job_has_been_added( $post_id, $post, $update ) {
-		
+
+	// Send the campaign
+	send_ua_webtide_job_campaign( $post_id, $post );
+	
+}
+
+function send_ua_webtide_job_campaign( $post_id, $post = null ) {
+
+	// Make sure we have a post
+	if ( ! $post ) {
+		$post = get_post( $post_id );
+	}
+
 	// Get the post type
 	$post_type = isset( $post->post_type ) ? $post->post_type : NULL;
-	
+
 	// Only for jobs post types
 	if ( 'jobs' != $post_type ) {
 		return;
 	}
-		
+
 	// Get the post status
 	$post_status = isset( $post->post_status ) ? $post->post_status : NULL;
-	
+
 	// Only for 'publish' post status
 	if ( 'publish' != $post_status ) {
 		return;
 	}
-		
+
 	// Get the job's closing date
 	$closing_date = get_post_meta( $post_id, 'closing_date', true );
-	
+
 	// It must have a closing date
 	if ( ! isset( $closing_date ) || empty( $closing_date ) ) {
 		return;
 	}
-		
+
 	// Only for jobs that haven't closed
 	if ( strtotime( $closing_date ) < strtotime( 'now' ) ) {
 		return;
 	}
-		
+
 	// Check our post meta to see if the job posting subscription notification has been sent to the job postings list
 	$webtide_job_subs_notif = get_post_meta( $post_id, '_mailchimp_webtide_job_subscription_notification', true );
-	
+
 	// Check our post meta to see if the job posting notification has been sent to WebTide
 	//$webtide_job_webtide_notif = get_post_meta( $post_id, '_mailchimp_webtide_job_webtide_notification', true );
-	
+
 	// If it's not empty, then the notification(s) has already been sent
 	if ( isset( $webtide_job_subs_notif ) && ! empty( $webtide_job_subs_notif ) ) {
 		return;
 	}
-		
+
 	// We're ready to send the notification!
-	
+
 	// Get our MailChimp API key
 	if ( ! ( $mailchimp_api_key = ( $gforms_mailchimp_options = get_option( 'gravityformsaddon_gravityformsmailchimp_settings' ) ) && isset( $gforms_mailchimp_options[ 'apiKey' ] ) ? $gforms_mailchimp_options[ 'apiKey' ] : NULL ) ) {
 		return;
 	}
-	
+
 	// Include the MailChimp wrapper
 	require_once plugin_dir_path( __FILE__ ) . "MailChimp.php";
-		
+
 	// Construct the MailChimp wrapper
 	$mailchimp = new MailChimp( $mailchimp_api_key );
-	
+
 	// Get the current date/time in Central time
 	$right_now = new DateTime();
 	$right_now->setTimeZone( new DateTimeZone( 'America/Chicago' ) );
-	
+
 	// Get an hour from now in UTC
 	$hour_from_now = new DateTime();
 	$hour_from_now->setTimeZone( new DateTimeZone( 'UTC' ) );
 	$hour_from_now->modify( '+1 hour' );
-	
+
 	// The ID for our job posts mailing list
 	$mailchimp_job_postings_list_id = '78ac144d2b';
-	
+
 	// The ID for our WebTide mailing list
 	//$mailchimp_webtide_list_id = 'ff3b753b4d';
-	
+
 	// The ID for our job posts mailing template
 	$mailchimp_job_postings_template_id = '132313';
-	
+
 	// The title for our new campaign
 	$mailchimp_campaign_title = 'New UA job posting for web professionals - ' . $right_now->format( 'n/j/Y' );
-	
+
 	// The subject for our new campaign email
 	$email_subject = 'There is a new University of Alabama job posting for web professionals';
-	
+
 	// Build email body
 	$email_body = NULL;
-		
+
 	// Build email body for other jobs, if they exist
 	$other_jobs_email_body = NULL;
-	
+
 	// Get other jobs
 	if ( $other_jobs = get_ua_webtide_open_jobs( $post_id ) ) {
-			
+
 		foreach( $other_jobs as $this_job ) {
-		
+
 			// Add the job posting to the email body
 			$other_jobs_email_body .= get_ua_webtide_job_body_for_mailchimp( $this_job->ID );
-			
+
 		}
-		
+
 	}
-	
+
 	// If we have other jobs, then prefix "NEW POSTING" to new job
 	if ( $other_jobs_email_body ) {
-		
+
 		// Start the email body with our new job posting
 		$email_body = get_ua_webtide_job_body_for_mailchimp( $post_id, array(
 			'header_prefix' => 'NEW POSTING: '
-			) );
-			
+		) );
+
 		// Add other jobs
 		$email_body .= $other_jobs_email_body;
-		
-	// If no other jobs, we don't need the new posting header
+
+		// If no other jobs, we don't need the new posting header
 	} else {
-		
+
 		// Start the email body with our new job posting
 		$email_body = get_ua_webtide_job_body_for_mailchimp( $post_id );
-			
+
 	}
-	
+
 	// Define the campaign arguments
 	$campaign_args = array(
 		'type'	=> 'regular',
@@ -210,24 +222,24 @@ function ua_webtide_job_has_been_added( $post_id, $post, $update ) {
 				'opens' => true,
 				'html_clicks' => true,
 				'text_clicks' => true
-				),
+			),
 			'analytics' => array(
 				'google' => 'UA_Web_Jobs_Subscription_' . $right_now->format( 'Y\_m\_d' )
-				),
+			),
 			'generate_text' => true,
 			'auto_tweet' => false,
 			'fb_comments' => false,
-			),
+		),
 		'content' => array(
 			'sections' => array(
 				'body' => $email_body,
-				)
 			)
-		);
-		
+		)
+	);
+
 	// We'll schedule the campaign to send an hour from now
 	$schedule_time = $hour_from_now->format( 'Y-m-d H:i:s' );
-	
+
 	// If the notification hasn't been sent to the job subscription list
 	if ( ! ( isset( $webtide_job_subs_notif ) && ! empty( $webtide_job_subs_notif ) ) ) {
 
@@ -245,7 +257,7 @@ function ua_webtide_job_has_been_added( $post_id, $post, $update ) {
 			if ( $mailchimp_schedule_jobs_list_campaign = $mailchimp->call( 'campaigns/schedule', array(
 				'cid'			=> $mailchimp_campaign_jobs_list_id,
 				'schedule_time' => $schedule_time,
-				) ) ) {
+			) ) ) {
 
 				// If it was scheduled...
 				if ( isset( $mailchimp_schedule_jobs_list_campaign[ 'complete' ] ) ) {
@@ -260,7 +272,7 @@ function ua_webtide_job_has_been_added( $post_id, $post, $update ) {
 		}
 
 	}
-	
+
 }
 	
 // Get job content for MailChimp email
