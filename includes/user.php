@@ -144,8 +144,14 @@ function get_ua_webtide_member_notification() {
 			// Add meridian
 			$meeting_start_time_str .= $start_date->format( ' a' );
 			
-			// Get the meeting title - limit words and make sure it doesn't have 4 ellipses
-			$meeting_title = preg_replace( '/[\.]{4}$/i', '...', wp_trim_words( get_the_title( $next_monthly_meeting->ID ), 11, '...' ) );
+			// Get the meeting title
+			$meeting_title = get_the_title( $next_monthly_meeting->ID );
+
+			// Make sure the title has less 50 or less characters
+			// Make sure it doesn't have 4 ellipses
+			if ( strlen( $meeting_title ) > 50 ) {
+				$meeting_title = preg_replace( '/[\.]{4}$/i', '...', substr( $meeting_title, 0, 50 ) . '...' );
+			}
 					
 			// If it's this week...
 			if ( ! $time_until_meeting->invert && $time_until_meeting->d < 4 ) {
